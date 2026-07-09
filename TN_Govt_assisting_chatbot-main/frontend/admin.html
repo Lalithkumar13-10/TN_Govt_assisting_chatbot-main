@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Admin · Nagar Kuraiteer</title>
+<link href="https://fonts.googleapis.com/css2?family=Anek+Tamil:wght@400;500;600;700&family=Noto+Sans+Tamil:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root{--bg:#EFF3F1;--surface:#fff;--ink:#10312B;--teal:#0E5A4F;--tealSoft:#E7F0ED;--accent:#E8871E;
+        --muted:#5C6B67;--line:#D8E2DE;--ok:#1E7A5E;--high:#C6472F;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans Tamil',system-ui,sans-serif}
+  header{background:var(--teal);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-family:'Anek Tamil';font-size:18px;margin:0}
+  header .sub{font-size:12px;opacity:.85}
+  select,input{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13.5px;background:#fff;color:var(--ink)}
+  header select{border:0;background:rgba(255,255,255,.15);color:#fff}
+  .wrap{max-width:1200px;margin:0 auto;padding:18px 20px}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:16px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}
+  .stat .n{font-family:'Anek Tamil';font-size:26px;font-weight:700}
+  .stat .l{font-size:12px;color:var(--muted)}
+  .stat.breach .n{color:var(--high)} .stat.sens .n{color:var(--accent)}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  th,td{text-align:left;padding:10px 12px;font-size:13.5px;border-bottom:1px solid var(--line)}
+  th{background:var(--tealSoft);font-family:'Anek Tamil';font-weight:600;color:var(--teal)}
+  tr:hover td{background:#F7FAF9;cursor:pointer}
+  .pill{font-size:11px;padding:3px 8px;border-radius:20px;color:#fff;white-space:nowrap}
+  .b-high{background:var(--high)}.b-medium{background:var(--accent)}.b-low{background:var(--muted)}
+  .b-ok{background:var(--ok)}.b-teal{background:var(--teal)}
+  .overdue{color:var(--high);font-weight:600}
+  .lock{color:var(--accent)}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:min(460px,100%);background:#fff;border-left:1px solid var(--line);
+          box-shadow:-12px 0 40px -20px rgba(0,0,0,.3);padding:20px;overflow-y:auto;transform:translateX(100%);transition:transform .2s}
+  .drawer.open{transform:none}
+  .drawer h2{font-family:'Anek Tamil';margin:0 0 2px}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;font-size:13.5px;margin:12px 0}
+  .kv .k{color:var(--muted)}
+  .raw{background:var(--tealSoft);border-radius:10px;padding:12px;font-size:14px;margin:10px 0}
+  .ev{border-left:2px solid var(--line);padding:6px 0 6px 12px;margin-left:4px;font-size:12.5px;color:var(--muted)}
+  .ev b{color:var(--ink)}
+  .btn{background:var(--teal);color:#fff;border:0;border-radius:8px;padding:9px 12px;font-size:13.5px;font-weight:600;font-family:'Anek Tamil';cursor:pointer}
+  .btn.ghost{background:#fff;color:var(--teal);border:1px solid var(--line)}
+  .close{float:right;cursor:pointer;color:var(--muted);font-size:20px}
+  .chain{font-size:11px;color:var(--ok)}
+</style>
+</head>
+<body>
+<header>
+  <div>🏛️ <b style="font-family:'Anek Tamil';font-size:18px">Nagar Kuraiteer</b>
+    <div class="sub">Officer & CM-Cell Console · Coimbatore</div></div>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+    <span class="sub">Viewing as</span>
+    <select id="role" onchange="load()">
+      <option value="cm_cell">CM Cell</option>
+      <option value="collector">District Collector</option>
+      <option value="commissioner">Commissioner</option>
+      <option value="dept_head">Dept Head</option>
+      <option value="ward_officer">Ward Officer</option>
+      <option value="auditor">Auditor (read-only)</option>
+    </select>
+    <button class="btn" onclick="runEscalation()">Run SLA escalation</button>
+  </div>
+</header>
+<div class="wrap">
+  <div class="stats" id="stats"></div>
+  <div class="filters">
+    <select id="fStatus" onchange="load()"><option value="">All statuses</option>
+      <option>registered</option><option>assigned</option><option>in_progress</option>
+      <option>escalated</option><option>reopened</option><option>resolved</option></select>
+    <select id="fCat" onchange="load()"><option value="">All categories</option>
+      <option value="streetlight">Streetlight</option><option value="garbage">Garbage</option>
+      <option value="water_supply">Water</option><option value="drainage">Drainage</option>
+      <option value="sewage">Sewage</option><option value="road">Road</option></select>
+    <span id="roleNote" class="sub" style="color:var(--muted)"></span>
+  </div>
+  <table>
+    <thead><tr><th>ID</th><th>Type</th><th>Ward</th><th>Severity</th><th>Status</th><th>Reporters</th><th>SLA</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+</div>
+
+<div class="drawer" id="drawer"></div>
+
+<script>
+const API="/api/v1";
+function role(){return document.getElementById('role').value}
+async function api(path,method="GET",body){const o={method,headers:{'Content-Type':'application/json','X-Role':role()}};
+  if(body)o.body=JSON.stringify(body);const r=await fetch(API+path,o);return r.json();}
+
+async function load(){
+  const s=await api('/admin/oversight');
+  document.getElementById('stats').innerHTML=`
+    <div class="stat"><div class="n">${s.total}</div><div class="l">Total grievances</div></div>
+    <div class="stat"><div class="n">${s.open}</div><div class="l">Open</div></div>
+    <div class="stat"><div class="n">${s.resolved}</div><div class="l">Resolved</div></div>
+    <div class="stat breach"><div class="n">${s.breached}</div><div class="l">SLA breached</div></div>
+    <div class="stat sens"><div class="n">${s.sensitive}</div><div class="l">Sensitive 🔒</div></div>`;
+  const st=document.getElementById('fStatus').value, cat=document.getElementById('fCat').value;
+  let q='/admin/grievances?';if(st)q+='status='+st+'&';if(cat)q+='category='+cat;
+  const d=await api(q);
+  document.getElementById('roleNote').textContent =
+    (role()==='ward_officer'||role()==='dept_head'||role()==='commissioner')
+    ? 'Sensitive grievances are hidden from this role.' : '';
+  document.getElementById('rows').innerHTML=d.grievances.map(g=>`
+    <tr onclick="openG('${g.id}')">
+      <td>${g.id}${g.sensitivity==='sensitive'?' <span class="lock">🔒</span>':''}</td>
+      <td>${g.category.en}</td><td>${g.ward||'—'}</td>
+      <td><span class="pill b-${g.severity}">${g.severity}</span></td>
+      <td><span class="pill ${g.status==='resolved'?'b-ok':'b-teal'}">${g.status}</span>${g.escalation_level>0?' ⬆'+g.escalation_level:''}</td>
+      <td>${g.reporter_count>1?'👥 '+g.reporter_count:g.reporter_count}</td>
+      <td class="${g.overdue?'overdue':''}">${g.overdue?'OVERDUE':new Date(g.sla_due_at).toLocaleDateString()}</td>
+    </tr>`).join('') || `<tr><td colspan="7" style="text-align:center;color:var(--muted)">No grievances for this filter/role.</td></tr>`;
+}
+
+async function openG(id){const g=await api('/admin/grievances/'+id);const dr=document.getElementById('drawer');
+  if(g.detail){dr.innerHTML=`<span class="close" onclick="closeD()">✕</span><h2>Restricted</h2><p>${g.detail}</p>`;dr.classList.add('open');return;}
+  const hist=(g.history||[]).map(e=>`<div class="ev"><b>${e.type}</b> ${e.from?e.from+' → ':''}${e.to||''} · ${e.role}<br>${e.note||''}<br><span style="opacity:.6">${new Date(e.at).toLocaleString()}</span></div>`).join('');
+  const officers=['OFF-WARD42','OFF-SWM','OFF-CMSR','OFF-COLL'];
+  dr.innerHTML=`<span class="close" onclick="closeD()">✕</span>
+    <h2>${g.id} ${g.sensitivity==='sensitive'?'<span class="lock">🔒</span>':''}</h2>
+    <div class="sub" style="color:var(--muted)">${g.category.en} · ${g.dept}</div>
+    <div class="raw"><b>Citizen's words (verbatim):</b><br>${g.description_raw}</div>
+    <div class="kv">
+      <span class="k">Ward</span><span>${g.ward||'—'}${g.landmark?' · '+g.landmark:''}</span>
+      <span class="k">Severity</span><span>${g.severity}</span>
+      <span class="k">Status</span><span>${g.status} (esc ${g.escalation_level})</span>
+      <span class="k">Reporters</span><span>${g.reporter_count}</span>
+      <span class="k">SLA due</span><span class="${g.overdue?'overdue':''}">${new Date(g.sla_due_at).toLocaleString()}${g.overdue?' — OVERDUE':''}</span>
+    </div>
+    <div class="chain">🔗 Audit chain ${g.chain_valid?'verified · tamper-evident':'BROKEN'}</div>
+    <h3 style="font-family:'Anek Tamil';margin:14px 0 4px">History</h3>${hist}
+    ${role()==='auditor'?'<p class="sub" style="color:var(--muted)">Auditor is read-only.</p>':`
+    <h3 style="font-family:'Anek Tamil';margin:14px 0 6px">Action</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      <button class="btn" onclick="setStatus('${g.id}','in_progress')">Mark In progress</button>
+      <button class="btn" onclick="resolveG('${g.id}')">Resolve</button></div>
+    <select id="assignSel">${officers.map(o=>`<option>${o}</option>`).join('')}</select>
+    <button class="btn ghost" onclick="assign('${g.id}')">Assign officer</button>`}`;
+  dr.classList.add('open');}
+function closeD(){document.getElementById('drawer').classList.remove('open')}
+async function setStatus(id,s){await api('/admin/grievances/'+id+'?status='+s+'&note=Updated+by+'+role(),'PATCH');openG(id);load();}
+async function resolveG(id){const note=prompt('Resolution note:')||'Resolved';
+  await api('/admin/grievances/'+id+'?status=resolved&note='+encodeURIComponent(note),'PATCH');openG(id);load();}
+async function assign(id){const o=document.getElementById('assignSel').value;
+  await api('/admin/grievances/'+id+'?officer_id='+o+'&status=assigned','PATCH');openG(id);load();}
+async function runEscalation(){const r=await api('/admin/run-escalation','POST');alert('Escalated: '+(r.escalated.join(', ')||'none'));load();}
+load();
+</script>
+</body>
+</html>
